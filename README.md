@@ -1,3 +1,4 @@
 # Minesweeper
 
-![](/screen.png)
+* npm i
+* npm run dev
