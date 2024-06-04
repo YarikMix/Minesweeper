@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<link rel="icon" type="image/svg+xml" href="./vite.svg" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+		<title>Minesweeper</title>
+		<script type="module" crossorigin src="./assets/index-D1wye0-N.js"></script>
+		<link rel="stylesheet" crossorigin href="./assets/index-C2jnxAEO.css">
+	</head>
+	<body>
+		<div class="game-wrapper">
+
+			<div class="game-container">
+
+				<div class="top-container">
+					<h1>Minesweeper</h1>
+				</div>
+
+				<div class="bottom-container">
+
+					<div class="left-container">
+
+						<div class="left-container__top-panel">
+
+							<label for="difficulty-options">Сложность:</label>
+							<select id="difficulty-options">
+								<option value="Custom">Кастомный</option>
+								<option value="Easy">Начинающий</option>
+								<option value="Medium">Продвинутый</option>
+								<option value="Hard">Эксперт</option>
+							</select>
+
+						</div>
+
+						<form class="left-container__bottom-panel" id="inputs-wrapper">
+							<h2>Настройки</h2>
+							<div class="input-item">
+								<label for="width">Рядов (от 2 до 30)</label>
+								<input type="text" id="width">
+							</div>
+							<div class="input-item">
+								<label for="height">Колонок (от 2 до 30)</label>
+								<input type="text" id="height">
+							</div>
+							<div class="input-item">
+								<label for="mines">Мин</label>
+								<input type="text" id="mines">
+							</div>
+							<button id="apply-settings-btn">Применить</button>
+						</form>
+
+					</div>
+
+					<div class="right-container">
+
+						<div class="right-container__top-panel">
+
+							<div class="mines-container">
+								<span id="mines-count"></span>
+							</div>
+
+							<div class="emoji-container">
+								<button id="reset-btn">😋</button>
+							</div>
+
+							<div class="click-type-toggle-container">
+
+								<label for="click-type">Режим:</label>
+								<select id="click-type">
+									<option value="left">⛏</option>
+									<option value="right">🚩</option>
+								</select>
+
+							</div>
+						</div>
+
+						<div class="right-container__bottom-panel">
+
+							<div class="game-state-container" id="game-state">
+
+							</div>
+
+							<canvas id="game" width="500" height="500"></canvas>
+
+						</div>
+
+					</div>
+
+				</div>
+
+			</div>
+
+		</div>
+
+  </body>
+</html>
