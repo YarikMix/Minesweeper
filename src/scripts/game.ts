@@ -1,16 +1,28 @@
 import {canvasSize, DifficultyLevels, GameState, TileState} from "./consts.ts";
 import Tile from "./tile.ts";
-import {ctx, difficultySelect, gameStateLabel, heightInput, minesCountLabel, minesInput, widthInput} from "./main.ts";
+import {
+    ctx,
+    difficultySelect,
+    gameStateLabel,
+    heightInput,
+    minesCountLabel,
+    minesInput,
+    optimizedRenderToggle,
+    widthInput
+} from "./main.ts";
 import {IDifficulty, IGameInfo, ITile} from "./types.ts";
 
 export let grid:ITile[] = [];
+
+export let diffs:any[] = []
 
 export let GameInfo:IGameInfo = {
     difficulty: DifficultyLevels.Easy,
     state: GameState.Playing,
     tileW: 50,
     tileH: 50,
-    firstTry: true
+    firstTry: true,
+    optimizedRender: false
 }
 
 export let difficulties:Record<string, IDifficulty> = {
@@ -52,6 +64,12 @@ export function checkState() {
 
 export function gameOver() {
     GameInfo.state = GameState.Lost
+
+    grid.forEach(tile => {
+        if (tile.hasMine && tile.currentState == TileState.Hidden) {
+            diffs.push(tile)
+        }
+    })
 }
 
 export function checkForSave() {
@@ -61,7 +79,7 @@ export function checkForSave() {
         grid = data.grid.map((tile:ITile) => new Tile(tile.x, tile.y, tile.hasMine, tile.danger, tile.currentState))
         difficulties = data.difficulties
 
-        render()
+        render(true)
     } else {
         startLevel(DifficultyLevels.Easy)
     }
@@ -72,6 +90,7 @@ export function startLevel(diff:DifficultyLevels) {
     GameInfo.state = GameState.Playing
     GameInfo.firstTry = true
     grid.length = 0
+    diffs = []
 
     let cDiff = difficulties[diff];
 
@@ -97,11 +116,11 @@ export function startLevel(diff:DifficultyLevels) {
         minesPlaced++
     }
 
-    for (let i in grid) {
-        grid[i].calcDanger()
-    }
+    grid.forEach(tile => {
+        tile.calcDanger()
+    })
 
-    render()
+    render(true)
 }
 
 export function handleClick(rawX:number, rawY:number, rightClick=false) {
@@ -127,7 +146,8 @@ export function handleClick(rawX:number, rawY:number, rightClick=false) {
     }
 }
 
-export function render() {
+export function render(firstRender=false) {
+    console.log("render")
     let halfW = GameInfo.tileW / 2
     let halfH = GameInfo.tileH / 2
 
@@ -143,33 +163,52 @@ export function render() {
         gameStateLabel.innerText = ""
     }
 
-    ctx.font = "bold 16px monospace"
+    ctx.font = "bold 20px monospace"
     ctx.textAlign = "center"
     ctx.textBaseline = "middle"
 
-    for (let i in grid) {
-        let px = grid[i].x * GameInfo.tileW
-        let py = grid[i].y * GameInfo.tileH
-        if ((GameInfo.state == GameState.Lost || GameInfo.state == GameState.Won) && grid[i].hasMine) {
-            ctx.fillStyle = "#ff0000"
-            ctx.fillRect(px, py, GameInfo.tileW, GameInfo.tileH)
-            ctx.fillText("💣", px + halfW, py + halfH)
-        } else if (grid[i].currentState == TileState.Visible) {
+    function renderTile(tile:ITile, px:number, py:number) {
+        if ((GameInfo.state == GameState.Lost || GameInfo.state == GameState.Won) && tile.hasMine) {
             ctx.fillStyle = "#dddddd"
             ctx.fillRect(px, py, GameInfo.tileW, GameInfo.tileH)
-            if (grid[i].danger) {
+            ctx.fillText("💣", px + halfW, py + halfH)
+        } else if (tile.currentState == TileState.Visible) {
+            ctx.fillStyle = "#dddddd"
+            ctx.fillRect(px, py, GameInfo.tileW, GameInfo.tileH)
+            if (tile.danger) {
                 ctx.fillStyle = "#000"
-                ctx.fillText(grid[i].danger.toString(), px + halfW, py + halfH)
+                ctx.fillText(tile.danger.toString(), px + halfW, py + halfH)
             }
         } else {
             ctx.fillStyle = "#ccc"
             ctx.fillRect(px, py, GameInfo.tileW, GameInfo.tileH)
             ctx.strokeRect(px, py, GameInfo.tileW, GameInfo.tileH)
 
-            if (grid[i].currentState == TileState.Flagged) {
+            if (tile.currentState == TileState.Flagged) {
                 ctx.fillText("🚩", px + halfW, py + halfH)
             }
         }
+    }
+
+    if (GameInfo.optimizedRender && !firstRender) {
+        diffs.forEach(tile => {
+            let px = tile.x * GameInfo.tileW
+            let py = tile.y * GameInfo.tileH
+            renderTile(tile, px, py)
+        })
+
+        console.log("Рендеров: " + diffs.length)
+
+        diffs = []
+
+    } else {
+        grid.forEach(tile => {
+            let px = tile.x * GameInfo.tileW
+            let py = tile.y * GameInfo.tileH
+            renderTile(tile, px, py)
+        })
+
+        console.log("Рендеров: " + grid.length)
     }
 
     widthInput.value = cDiff.width.toString();
@@ -178,6 +217,12 @@ export function render() {
 
     difficultySelect.value = DifficultyLevels[GameInfo.difficulty];
 
+    optimizedRenderToggle.checked = GameInfo.optimizedRender
+
+    saveGame()
+}
+
+export function saveGame() {
     localStorage.setItem("save", JSON.stringify({
         GameInfo: GameInfo,
         grid: grid,

@@ -18,6 +18,7 @@ export interface IGameInfo {
     tileW: number
     tileH: number
     firstTry: boolean
+    optimizedRender: boolean
 }
 
 export interface IDifficulty {

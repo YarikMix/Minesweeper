@@ -1,4 +1,4 @@
-import {grid, GameInfo, checkState, gameOver, difficulties} from "./game.ts";
+import {grid, GameInfo, checkState, gameOver, difficulties, diffs} from "./game.ts";
 import {TileState} from "./consts.ts";
 
 class Tile {
@@ -41,10 +41,10 @@ class Tile {
         } else if (this.currentState == TileState.Flagged) {
             this.currentState = TileState.Hidden
         }
+        diffs.push(this)
     }
 
     public click () {
-        
         if (this.currentState != TileState.Hidden) {
             return
         }
@@ -53,8 +53,10 @@ class Tile {
             gameOver()
         } else if (this.danger > 0) {
             this.currentState = TileState.Visible
+            diffs.push(this)
         } else {
             this.currentState = TileState.Visible
+            diffs.push(this)
             this.revealNeighbours()
         }
 
@@ -78,11 +80,14 @@ class Tile {
 
                 let idx = ((py * cDiff.width) + px);
 
-                if (grid[idx].currentState == TileState.Hidden) {
-                    grid[idx].currentState = TileState.Visible;
+                const tile = grid[idx]
 
-                    if (grid[idx].danger == 0) {
-                        grid[idx].revealNeighbours();
+                if (tile.currentState == TileState.Hidden) {
+                    tile.currentState = TileState.Visible;
+                    diffs.push({x: px, y: py, hasMine: tile.hasMine, danger: tile.danger, currentState: tile.currentState})
+
+                    if (tile.danger == 0) {
+                        tile.revealNeighbours();
                     }
                 }
             }
