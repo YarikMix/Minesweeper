@@ -17,6 +17,9 @@
 
 				<div class="top-container">
 					<h1>Minesweeper</h1>
+					<div id="game-state">
+
+					</div>
 					<div class="darkmode-toggle">
 						<div class="darkmode-toggle__indicator">
 							<div class="darkmode-toggle__icon-container">
@@ -54,11 +57,11 @@
 							</div>
 
 							<div class="input-item">
-								<label for="width">Рядов (от 2 до 30)</label>
+								<label for="width">Рядов (от 1 до 1000)</label>
 								<input type="text" id="width">
 							</div>
 							<div class="input-item">
-								<label for="height">Колонок (от 2 до 30)</label>
+								<label for="height">Колонок (от 1 до 1000)</label>
 								<input type="text" id="height">
 							</div>
 							<div class="input-item">
@@ -94,10 +97,6 @@
 						</div>
 
 						<div class="right-container__bottom-panel">
-
-							<div class="game-state-container" id="game-state">
-
-							</div>
 
 							<canvas id="game" width="500" height="500"></canvas>
 

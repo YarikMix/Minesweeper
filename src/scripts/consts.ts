@@ -1,4 +1,3 @@
-export const canvasSize = 500
 
 export enum DifficultyLevels {
     Custom ,

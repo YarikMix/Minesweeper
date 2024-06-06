@@ -1,3 +1,5 @@
+import {canvas} from "./main.ts";
+
 export function normalizeCoords(x:number, y:number) {
     let p = document.getElementById("game") as HTMLElement
 
@@ -8,5 +10,6 @@ export function normalizeCoords(x:number, y:number) {
         p = p.offsetParent as HTMLElement;
     } while (p != null)
 
-    return [x, y]
+    const parent = canvas.parentElement as HTMLElement
+    return [x + parent.scrollLeft, y + parent.scrollTop]
 }

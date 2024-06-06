@@ -45,6 +45,22 @@ body
 				width: 100%
 				display: flex
 				justify-content: space-between
+				align-items: center
+
+				#game-state
+					background: #eee
+					border-radius: 4px
+					display: flex
+					justify-content: center
+					align-items: center
+					cursor: default
+					transition: 0.3s ease
+
+					&.active
+						padding: 4px 8px
+
+					&:hover
+						background: #ddd
 
 				.darkmode-toggle
 					background: #fff
@@ -161,7 +177,7 @@ body
 					gap: 15px
 
 					&__top-panel
-						width: 100%
+						width: 500px
 						display: flex
 						justify-content: space-between
 						align-items: center
@@ -192,25 +208,10 @@ body
 
 					&__bottom-panel
 						position: relative
+						width: 525px
+						height: 525px
+						overflow: auto
+						display: flex
 
-						.game-state-container
-							position: absolute
-							top: 0
-							left: 0
-							width: 100%
-							height: 100%
-							background: rgba(0, 0, 0, 0.8)
-							display: none
-							justify-content: center
-							align-items: center
-							font-size: 32px
-							color: #ddd
-
-							&.active
-								display: flex
-
-
-
-
-
-
+						canvas
+							margin: auto

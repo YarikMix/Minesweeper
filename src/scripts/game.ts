@@ -1,6 +1,7 @@
-import {canvasSize, DifficultyLevels, GameState, TileState} from "./consts.ts";
+import {DifficultyLevels, GameState, TileState} from "./consts.ts";
 import Tile from "./tile.ts";
 import {
+    canvas,
     ctx,
     difficultySelect,
     gameStateLabel,
@@ -19,8 +20,8 @@ export let diffs:any[] = []
 export let GameInfo:IGameInfo = {
     difficulty: DifficultyLevels.Easy,
     state: GameState.Playing,
-    tileW: 50,
-    tileH: 50,
+    tileW: 10,
+    tileH: 10,
     firstTry: true,
     optimizedRender: false
 }
@@ -60,6 +61,12 @@ export function checkState() {
     }
 
     GameInfo.state = GameState.Won
+
+    grid.forEach(tile => {
+        if (tile.hasMine && tile.currentState == TileState.Hidden) {
+            diffs.push(tile)
+        }
+    })
 }
 
 export function gameOver() {
@@ -79,36 +86,58 @@ export function checkForSave() {
         grid = data.grid.map((tile:ITile) => new Tile(tile.x, tile.y, tile.hasMine, tile.danger, tile.currentState))
         difficulties = data.difficulties
 
+        calcSizes()
+
         render(true)
     } else {
         startLevel(DifficultyLevels.Easy)
     }
 }
 
-export function startLevel(diff:DifficultyLevels) {
-    GameInfo.difficulty = diff;
+function calcSizes() {
+    let cDiff = difficulties[GameInfo.difficulty];
+
+    GameInfo.tileW = 50
+    GameInfo.tileH = 50
+
+    if (cDiff.width * cDiff.height >= 100000) {
+        GameInfo.tileW = 10
+        GameInfo.tileH = 10
+    }
+
+    canvas.width = GameInfo.tileW * cDiff.width
+    canvas.height = GameInfo.tileH * cDiff.height
+}
+
+export function startLevel(difficulty:DifficultyLevels) {
+    GameInfo.difficulty = difficulty;
     GameInfo.state = GameState.Playing
     GameInfo.firstTry = true
     grid.length = 0
     diffs = []
 
-    let cDiff = difficulties[diff];
+    let cDiff = difficulties[difficulty];
 
-    GameInfo.tileW = canvasSize / cDiff.width
-    GameInfo.tileH = canvasSize / cDiff.height
+    calcSizes()
 
     for (let py = 0; py < cDiff.height; py++) {
         for (let px = 0; px < cDiff.width; px++) {
-            grid.push(new Tile(px, py));
+            grid.push(new Tile(px, py) as ITile);
         }
     }
+
+    render(true)
+}
+
+function placeMines(excludeIdx:number | null=null) {
+    let cDiff = difficulties[GameInfo.difficulty];
 
     let minesPlaced = 0
 
     while (minesPlaced < cDiff.mines) {
         let idx = Math.floor(Math.random() * grid.length);
 
-        if (grid[idx].hasMine) {
+        if (grid[idx].hasMine || excludeIdx == idx) {
             continue;
         }
 
@@ -119,8 +148,6 @@ export function startLevel(diff:DifficultyLevels) {
     grid.forEach(tile => {
         tile.calcDanger()
     })
-
-    render(true)
 }
 
 export function handleClick(rawX:number, rawY:number, rightClick=false) {
@@ -135,6 +162,11 @@ export function handleClick(rawX:number, rawY:number, rightClick=false) {
     let y = Math.floor(rawY / GameInfo.tileH)
 
     const idx=  x + y * cDiff.width
+
+    if (GameInfo.firstTry) {
+        placeMines(idx)
+    }
+
     const tile = grid[idx]
 
     if (tile.currentState != TileState.Visible && rightClick) {
@@ -146,7 +178,7 @@ export function handleClick(rawX:number, rawY:number, rightClick=false) {
     }
 }
 
-export function render(firstRender=false) {
+export function render(forceRender=false) {
     console.log("render")
     let halfW = GameInfo.tileW / 2
     let halfH = GameInfo.tileH / 2
@@ -190,7 +222,7 @@ export function render(firstRender=false) {
         }
     }
 
-    if (GameInfo.optimizedRender && !firstRender) {
+    if (GameInfo.optimizedRender && !forceRender) {
         diffs.forEach(tile => {
             let px = tile.x * GameInfo.tileW
             let py = tile.y * GameInfo.tileH
@@ -223,9 +255,13 @@ export function render(firstRender=false) {
 }
 
 export function saveGame() {
-    localStorage.setItem("save", JSON.stringify({
-        GameInfo: GameInfo,
-        grid: grid,
-        difficulties: difficulties
-    }))
+    try {
+        localStorage.setItem("save", JSON.stringify({
+            GameInfo: GameInfo,
+            grid: grid,
+            difficulties: difficulties
+        }))
+    } catch {
+        console.log("Не удалось сохранить игру")
+    }
 }

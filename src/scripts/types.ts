@@ -27,9 +27,3 @@ export interface IDifficulty {
     height:number
     mines: number
 }
-
-export interface IMouseState {
-    x: number,
-    y: number,
-    click: [number, number, number] | null
-}
