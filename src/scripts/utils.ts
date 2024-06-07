@@ -1,7 +1,6 @@
-import {canvas} from "./main.ts";
 
-export function normalizeCoords(x:number, y:number) {
-    let p = document.getElementById("game") as HTMLElement
+export function normalizeCoords(x:number, y:number, canvas:HTMLCanvasElement) {
+    let p = document.getElementById(canvas.id) as HTMLElement
 
     do {
         x -= p.offsetLeft;

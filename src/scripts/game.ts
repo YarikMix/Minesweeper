@@ -1,27 +1,27 @@
 import {DifficultyLevels, GameState, TileState} from "./consts.ts";
 import Tile from "./tile.ts";
 import {
-    canvas,
-    ctx,
     difficultySelect,
     gameStateLabel,
     heightInput,
     minesCountLabel,
     minesInput,
     optimizedRenderToggle,
+    viewport,
     widthInput
 } from "./main.ts";
-import {IDifficulty, IGameInfo, ITile} from "./types.ts";
-
-export let grid:ITile[] = [];
+import {IChunk, IDifficulty, IGameInfo, ITile} from "./types.ts";
+import {Chunk} from "./chunk.ts";
 
 export let diffs:any[] = []
+
+export let chunks:IChunk[] = []
 
 export let GameInfo:IGameInfo = {
     difficulty: DifficultyLevels.Easy,
     state: GameState.Playing,
-    tileW: 10,
-    tileH: 10,
+    tileW: 50,
+    tileH: 50,
     firstTry: true,
     optimizedRender: false
 }
@@ -35,9 +35,9 @@ export let difficulties:Record<string, IDifficulty> = {
     },
     [DifficultyLevels.Easy]: {
         name: DifficultyLevels.Easy,
-        width: 9,
-        height: 9,
-        mines: 10
+        width: 1000,
+        height: 1000,
+        mines: 100000
     },
     [DifficultyLevels.Medium]: {
         name: DifficultyLevels.Medium,
@@ -54,28 +54,42 @@ export let difficulties:Record<string, IDifficulty> = {
 }
 
 export function checkState() {
-    for (let i in grid) {
-        if (!grid[i].hasMine && grid[i].currentState != TileState.Visible) {
-            return
-        }
-    }
 
-    GameInfo.state = GameState.Won
-
-    grid.forEach(tile => {
-        if (tile.hasMine && tile.currentState == TileState.Hidden) {
-            diffs.push(tile)
+    let flag = true
+    chunks.forEach(chunk => {
+        for (let i in chunk.grid) {
+            if (!chunk.grid[i].hasMine && chunk.grid[i].currentState != TileState.Visible) {
+                flag = false
+                return
+            }
         }
     })
+
+    if (flag) {
+        console.log("Won")
+        GameInfo.state = GameState.Won
+
+        chunks.forEach(chunk => {
+            chunk.grid.forEach(tile => {
+                if (tile.hasMine && tile.currentState == TileState.Hidden) {
+                    diffs.push(tile)
+                }
+            })
+        })
+    }
 }
 
 export function gameOver() {
+    console.log("gameOver")
+
     GameInfo.state = GameState.Lost
 
-    grid.forEach(tile => {
-        if (tile.hasMine && tile.currentState == TileState.Hidden) {
-            diffs.push(tile)
-        }
+    chunks.forEach(chunk => {
+        chunk.grid.forEach(tile => {
+            if (tile.hasMine && tile.currentState == TileState.Hidden) {
+                diffs.push(tile)
+            }
+        })
     })
 }
 
@@ -86,100 +100,132 @@ export function checkForSave() {
         grid = data.grid.map((tile:ITile) => new Tile(tile.x, tile.y, tile.hasMine, tile.danger, tile.currentState))
         difficulties = data.difficulties
 
-        calcSizes()
+        // calcSizes()
 
-        render(true)
+        // render(true)
     } else {
         startLevel(DifficultyLevels.Easy)
     }
-}
-
-function calcSizes() {
-    let cDiff = difficulties[GameInfo.difficulty];
-
-    GameInfo.tileW = 50
-    GameInfo.tileH = 50
-
-    if (cDiff.width * cDiff.height >= 100000) {
-        GameInfo.tileW = 10
-        GameInfo.tileH = 10
-    }
-
-    canvas.width = GameInfo.tileW * cDiff.width
-    canvas.height = GameInfo.tileH * cDiff.height
 }
 
 export function startLevel(difficulty:DifficultyLevels) {
     GameInfo.difficulty = difficulty;
     GameInfo.state = GameState.Playing
     GameInfo.firstTry = true
-    grid.length = 0
     diffs = []
+    chunks = []
 
     let cDiff = difficulties[difficulty];
 
-    calcSizes()
-
-    for (let py = 0; py < cDiff.height; py++) {
-        for (let px = 0; px < cDiff.width; px++) {
-            grid.push(new Tile(px, py) as ITile);
+    let k = 1
+    for(let i = 0; i < Math.ceil(cDiff.width / 100); i++){
+        for (let j = 0; j < Math.ceil(cDiff.height / 100); j++) {
+            chunks.push(new Chunk(k, i, j, Math.min(cDiff.width - i * 100, 100), Math.min(cDiff.height - j * 100, 100)))
+            k += 1
         }
     }
 
-    render(true)
+    console.log(chunks)
+
+    chunks.forEach(chunk => {
+
+        const canvas = document.createElement("canvas")
+        canvas.id = chunk.id.toString()
+        canvas.style.left = (chunk.x * (100 * 50)).toString() + "px"
+        canvas.style.top = (chunk.y * (100 * 50)).toString() + "px"
+
+        console.log(chunk.width)
+        canvas.width = chunk.width * 50
+        canvas.height = chunk.height * 50
+
+        viewport.appendChild(canvas)
+
+        renderChunk(chunk, true)
+    })
 }
 
 function placeMines(excludeIdx:number | null=null) {
+    console.log("placeMines")
+
     let cDiff = difficulties[GameInfo.difficulty];
 
     let minesPlaced = 0
 
-    while (minesPlaced < cDiff.mines) {
-        let idx = Math.floor(Math.random() * grid.length);
 
-        if (grid[idx].hasMine || excludeIdx == idx) {
+    while (minesPlaced < cDiff.mines) {
+        const chunk = chunks[Math.floor(Math.random() * chunks.length)]
+        let idx = Math.floor(Math.random() * chunk.grid.length);
+
+        if (chunk.grid[idx].hasMine || excludeIdx == idx) {
             continue;
         }
 
-        grid[idx].hasMine = true;
+        chunk.grid[idx].hasMine = true;
         minesPlaced++
     }
 
-    grid.forEach(tile => {
-        tile.calcDanger()
+    chunks.forEach(chunk => {
+        // TODO: как вычислять на границе чанков
+        chunk.grid.forEach(tile => {
+            tile.calcDanger(chunk.grid, chunk.width, chunk.height)
+        })
     })
 }
 
-export function handleClick(rawX:number, rawY:number, rightClick=false) {
+export function handleClick(rawX:number, rawY:number, chunk_id:string, rightClick=false) {
     if (GameInfo.state == GameState.Won || GameInfo.state == GameState.Lost) {
         startLevel(GameInfo.difficulty)
         return
     }
 
-    let cDiff = difficulties[GameInfo.difficulty]
+    const chunk = chunks[Number(chunk_id) - 1] as IChunk
+    console.log(chunk)
 
     let x = Math.floor(rawX / GameInfo.tileW)
     let y = Math.floor(rawY / GameInfo.tileH)
 
-    const idx=  x + y * cDiff.width
+    const idx=  x + y * chunk.width
+
+    const tile = chunk.grid[idx]
+    console.log(tile)
 
     if (GameInfo.firstTry) {
         placeMines(idx)
+        GameInfo.firstTry = false
     }
-
-    const tile = grid[idx]
 
     if (tile.currentState != TileState.Visible && rightClick) {
         tile.flag()
-        render()
+        renderChunk(chunk)
     } else if (tile.currentState == TileState.Hidden) {
-        tile.click()
-        render()
+        tile.click(chunk.grid, chunk.width, chunk.height, chunk)
+
+        if (GameInfo.state == GameState.Playing) {
+            chunks.forEach(chunk => {
+                renderChunk(chunk, true)
+            })
+        }
     }
 }
 
-export function render(forceRender=false) {
-    console.log("render")
+export function handleTileClick(chunkX, chunkY, tileX, tileY) {
+    console.log("handleTileClick")
+
+    const chunk = chunks.find(c => c.x == chunkX && c.y == chunkY)
+    console.log(chunkX, chunkY, tileX, tileY)
+
+    if (!chunk) {
+        return
+    }
+
+    const idx =  tileX + tileY * chunk.width
+
+    const tile = chunk.grid[idx]
+    tile.click(chunk.grid, chunk.width, chunk.height, chunk)
+}
+
+export function renderChunk(chunk:IChunk, forceRender=false) {
+    console.log("renderChunk")
     let halfW = GameInfo.tileW / 2
     let halfH = GameInfo.tileH / 2
 
@@ -195,7 +241,10 @@ export function render(forceRender=false) {
         gameStateLabel.innerText = ""
     }
 
-    ctx.font = "bold 20px monospace"
+    const canvas = document.getElementById(chunk.id.toString()) as HTMLCanvasElement
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D
+
+    ctx.font = "bold 10px monospace"
     ctx.textAlign = "center"
     ctx.textBaseline = "middle"
 
@@ -216,6 +265,9 @@ export function render(forceRender=false) {
             ctx.fillRect(px, py, GameInfo.tileW, GameInfo.tileH)
             ctx.strokeRect(px, py, GameInfo.tileW, GameInfo.tileH)
 
+            ctx.fillStyle = "#000"
+            ctx.fillText(`${px},${py}`, px + halfW, py + halfH)
+
             if (tile.currentState == TileState.Flagged) {
                 ctx.fillText("🚩", px + halfW, py + halfH)
             }
@@ -234,13 +286,14 @@ export function render(forceRender=false) {
         diffs = []
 
     } else {
-        grid.forEach(tile => {
+
+        chunk.grid.forEach(tile => {
             let px = tile.x * GameInfo.tileW
             let py = tile.y * GameInfo.tileH
             renderTile(tile, px, py)
         })
 
-        console.log("Рендеров: " + grid.length)
+        console.log("Рендеров: " + chunk.grid.length)
     }
 
     widthInput.value = cDiff.width.toString();
@@ -251,7 +304,7 @@ export function render(forceRender=false) {
 
     optimizedRenderToggle.checked = GameInfo.optimizedRender
 
-    saveGame()
+    // saveGame()
 }
 
 export function saveGame() {

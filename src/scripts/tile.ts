@@ -1,5 +1,6 @@
-import {grid, GameInfo, checkState, gameOver, difficulties, diffs} from "./game.ts";
+import {GameInfo, checkState, gameOver, diffs, handleTileClick} from "./game.ts";
 import {TileState} from "./consts.ts";
+import {IChunk, ITile} from "./types.ts";
 
 let stack:Tile[] = []
 
@@ -18,19 +19,18 @@ class Tile {
         this.currentState = currentState;
     }
 
-    public calcDanger () {
-        let cDiff = difficulties[GameInfo.difficulty]
+    public calcDanger (grid:ITile[], chunkW:number, chunkH:number) {
         for (let py = this.y - 1; py <= this.y + 1; py++){
             for (let px = this.x - 1; px <= this.x + 1; px++) {
                 if (px == this.x && py == this.y) {
                     continue;
                 }
 
-                if (px < 0 || py < 0 || px >= cDiff.width || py >= cDiff.height) {
+                if (px < 0 || py < 0 || px >= chunkW || py >= chunkH) {
                     continue;
                 }
 
-                if (grid[((py*cDiff.width) + px)].hasMine) {
+                if (grid[((py*chunkW) + px)].hasMine) {
                     this.danger++
                 }
             }
@@ -46,7 +46,10 @@ class Tile {
         diffs.push(this)
     }
 
-    public click () {
+    public click (grid:ITile[], chunkW:number, chunkH:number, chunk:IChunk) {
+        console.log("click")
+        console.log(chunk)
+
         if (this.currentState != TileState.Hidden) {
             return
         }
@@ -60,8 +63,6 @@ class Tile {
             this.currentState = TileState.Visible
             diffs.push(this)
 
-            let cDiff = difficulties[GameInfo.difficulty]
-
             // Обработка всех соседних ячеек через стэк (рекурсивная обработка вызывает переполнение при большом количестве ячеек)
 
             stack.push(this)
@@ -74,13 +75,37 @@ class Tile {
                             continue;
                         }
 
-                        if (px < 0 || py < 0 || px >= cDiff.width || py >= cDiff.height) {
+                        if (px < 0 || py < 0) {
                             continue;
                         }
 
-                        let idx = ((py * cDiff.width) + px);
+                        if (px >= chunkW && py >= chunkH) {
+                            handleTileClick(chunk.x + 1, chunk.y + 1, px % 100, py % 100)
+                        }
+
+                        if (px >= chunkW) {
+                            handleTileClick(chunk.x + 1, chunk.y, px % 100, py % 100)
+                        }
+
+                        if (py >= chunkH) {
+                            handleTileClick(chunk.x, chunk.y + 1, px % 100, py % 100)
+                        }
+
+                        if (px == 0) {
+                            handleTileClick(chunk.x - 1, chunk.y, px % 100, py % 100)
+                        }
+
+                        if (py == 0) {
+                            handleTileClick(chunk.x, chunk.y - 1, px % 100, py % 100)
+                        }
+
+                        let idx = ((py * chunkW) + px);
 
                         const tile = grid[idx]
+
+                        if (!tile) {
+                            return;
+                        }
 
                         if (tile.currentState == TileState.Hidden) {
                             tile.currentState = TileState.Visible;

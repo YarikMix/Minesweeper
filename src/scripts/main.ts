@@ -4,9 +4,6 @@ import {DifficultyLevels} from "./consts.ts";
 import {checkForSave, difficulties, GameInfo, handleClick, saveGame, startLevel} from "./game.ts";
 import {normalizeCoords} from "./utils.ts";
 
-export let ctx:CanvasRenderingContext2D;
-
-export let canvas:HTMLCanvasElement;
 
 let resetBtn:HTMLButtonElement;
 
@@ -24,6 +21,8 @@ export let minesCountLabel:HTMLLabelElement;
 export let gameStateLabel:HTMLLabelElement;
 
 export let optimizedRenderToggle:HTMLInputElement;
+
+export let viewport:HTMLElement;
 
 let darkmodeToggle:HTMLElement;
 
@@ -113,23 +112,31 @@ window.onload = function() {
         startLevel(GameInfo.difficulty)
     })
 
-    canvas = document.getElementById("game") as HTMLCanvasElement;
-
-    ctx = canvas.getContext("2d") as CanvasRenderingContext2D
-
-    canvas.addEventListener("click", function(e) {
+    viewport = document.getElementById("viewport") as HTMLElement
+    viewport.addEventListener("click", function(e) {
         const isRightClick = clickTypeSelect.value == "right"
-
-        const [x, y] = normalizeCoords(e.pageX, e.pageY)
-        handleClick(x, y, isRightClick);
+        if (e.target instanceof HTMLCanvasElement) {
+            const [x, y] = normalizeCoords(e.pageX, e.pageY, e.target)
+            handleClick(x, y, e.target.id, isRightClick);
+        }
     })
 
-    canvas.addEventListener("contextmenu", function(e) {
+    viewport.addEventListener("contextmenu", function(e) {
         e.preventDefault();
-        const [x, y] = normalizeCoords(e.pageX, e.pageY)
-        handleClick(x , y,true);
+        if (e.target instanceof HTMLCanvasElement) {
+            const [x, y] = normalizeCoords(e.pageX, e.pageY, e.target)
+            handleClick(x, y, e.target.id, true);
+        }
+
         return false;
     })
+
+    // TODO: добавить троттлинг
+    // viewport.addEventListener("scroll", function () {
+    //     console.log("scroll")
+    //     console.log(`${viewport.scrollTop} / ${viewport.scrollHeight}`)
+    //     console.log(`${viewport.scrollLeft} / ${viewport.scrollWidth}`)
+    // })
 
     checkForSave()
 }
